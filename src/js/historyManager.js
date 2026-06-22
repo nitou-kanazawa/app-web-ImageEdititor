@@ -186,31 +186,13 @@ class HistoryManager {
     calculateMemoryUsage() {
         let totalBytes = 0;
         this.history.forEach(state => {
-            totalBytes += state.imageData.data.length * 4; // RGBA = 4 bytes per pixel
+            totalBytes += state.imageData.data.length; // data.lengthは既にバイト数（幅×高さ×4）
         });
 
         if (totalBytes < 1024 * 1024) {
             return Math.round(totalBytes / 1024) + ' KB';
         } else {
             return Math.round(totalBytes / (1024 * 1024)) + ' MB';
-        }
-    }
-
-    /**
-     * 履歴の最適化（古い履歴を削除してメモリを節約）
-     * @param {number} keepCount - 保持する履歴数
-     */
-    optimize(keepCount = 5) {
-        if (this.history.length > keepCount) {
-            const removeCount = this.history.length - keepCount;
-            this.history.splice(0, removeCount);
-            this.currentIndex -= removeCount;
-            if (this.currentIndex < 0) this.currentIndex = 0;
-
-            debugLog('History optimized', {
-                removedCount: removeCount,
-                remaining: this.history.length
-            });
         }
     }
 }

@@ -117,6 +117,13 @@ class MosaicApp {
         // キーボードショートカット
         this.initKeyboardShortcuts();
 
+        // ウィンドウリサイズ時にオーバーレイ位置を再調整
+        window.addEventListener('resize', () => {
+            if (this.imageProcessor && this.imageProcessor.hasImage()) {
+                this.alignOverlayCanvas();
+            }
+        });
+
         debugLog('Event listeners initialized');
     }
 
