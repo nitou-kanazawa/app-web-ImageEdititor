@@ -209,6 +209,74 @@ body {
     text-align: right;
 }
 
+.slider-control__slider:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* チェックボックスオプション */
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    transition: border-color 0.2s ease;
+}
+
+.checkbox-option:hover {
+    border-color: #cbd5e0;
+}
+
+.checkbox-option input[type="checkbox"] {
+    margin-right: 0.5rem;
+    accent-color: #4299e1;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.checkbox-option input[type="checkbox"]:checked+span {
+    font-weight: 600;
+    color: #2b6cb0;
+}
+
+/* テキスト入力（出力設定） */
+.text-input-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    cursor: text;
+}
+
+.text-input-control__label {
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.text-input-control__input {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.text-input-control__input:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.text-input-control__hint {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-top: 0.25rem;
+    word-break: break-all;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     .tool-selection {

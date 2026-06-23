@@ -34,6 +34,10 @@
                             <span>フリー選択</span>
                         </label>
                         <label class="radio-option">
+                            <input type="radio" name="selectionMode" value="brush">
+                            <span>丸ブラシ</span>
+                        </label>
+                        <label class="radio-option">
                             <input type="radio" name="selectionMode" value="full">
                             <span>全体</span>
                         </label>
@@ -49,7 +53,27 @@
                                 value="10" step="1">
                             <span class="slider-control__value" id="mosaicSizeValue">10px</span>
                         </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="autoMosaicSize">
+                            <span>長辺の1/100を自動設定</span>
+                        </label>
+                        <label class="slider-control" id="brushSizeControl" style="display: none;">
+                            <span class="slider-control__label">ブラシ:</span>
+                            <input type="range" id="brushSizeSlider" class="slider-control__slider" min="5" max="50"
+                                value="15" step="1">
+                            <span class="slider-control__value" id="brushSizeValue">15px</span>
+                        </label>
                     </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>出力設定</h3>
+                    <label class="text-input-control">
+                        <span class="text-input-control__label">ファイル名サフィックス:</span>
+                        <input type="text" id="downloadSuffix" class="text-input-control__input" placeholder="例: _edited"
+                            maxlength="40">
+                    </label>
+                    <p class="text-input-control__hint">保存名: mosaic-image<span id="suffixPreview"></span>.png</p>
                 </div>
             </section>
 
