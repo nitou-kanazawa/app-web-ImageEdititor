@@ -1,0 +1,15 @@
+{
+  "name": "image-mosaic-editor",
+  "version": "1.0.0",
+  "description": "クライアントサイド画像モザイク処理Webアプリ",
+  "private": true,
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:update-snapshots": "playwright test --update-snapshots"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
