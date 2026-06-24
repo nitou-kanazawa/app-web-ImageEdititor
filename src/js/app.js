@@ -46,6 +46,10 @@ class MosaicApp {
                 this.updateProcessButton();
             });
 
+            // 初期値を反映
+            this.selectionManager.setBrushSize(parseInt(this.elements.brushSizeSlider.value));
+            this.updateSuffixPreview();
+
             debugLog('App initialized successfully');
 
         } catch (error) {
@@ -72,7 +76,13 @@ class MosaicApp {
             toolSelection: $('#toolSelection'),
             selectionModeRadios: $$('input[name="selectionMode"]'),
             mosaicSizeSlider: $('#mosaicSizeSlider'),
-            mosaicSizeValue: $('#mosaicSizeValue')
+            mosaicSizeValue: $('#mosaicSizeValue'),
+            autoMosaicSize: $('#autoMosaicSize'),
+            brushSizeControl: $('#brushSizeControl'),
+            brushSizeSlider: $('#brushSizeSlider'),
+            brushSizeValue: $('#brushSizeValue'),
+            downloadSuffix: $('#downloadSuffix'),
+            suffixPreview: $('#suffixPreview')
         };
 
         // 必要な要素が存在するかチェック（配列は除外）
@@ -109,7 +119,16 @@ class MosaicApp {
         });
 
         // モザイクサイズ変更
-        this.elements.mosaicSizeSlider.addEventListener('input', (e) => this.updateMosaicSize(e.target.value));
+        this.elements.mosaicSizeSlider.addEventListener('input', () => this.updateMosaicSizeDisplay());
+
+        // 長辺1/100自動設定の切り替え
+        this.elements.autoMosaicSize.addEventListener('change', () => this.updateMosaicSizeDisplay());
+
+        // ブラシサイズ変更
+        this.elements.brushSizeSlider.addEventListener('input', (e) => this.updateBrushSize(e.target.value));
+
+        // ダウンロードファイル名サフィックス
+        this.elements.downloadSuffix.addEventListener('input', () => this.updateSuffixPreview());
 
         // ドラッグ&ドロップ対応
         this.initDragAndDrop();
@@ -244,6 +263,7 @@ class MosaicApp {
         // 初期状態のボタンを更新
         this.updateSelectionButtons();
         this.updateProcessButton();
+        this.updateMosaicSizeDisplay();
 
         // 初期状態を履歴に保存
         this.saveCurrentState('Initial Image Load');
@@ -284,8 +304,8 @@ class MosaicApp {
                 selectionMask = this.selectionManager.createSelectionMask(info.width, info.height);
             }
 
-            // スライダーで設定されたブロックサイズを取得
-            const blockSize = parseInt(this.elements.mosaicSizeSlider.value);
+            // 適用するブロックサイズを取得（自動設定 or スライダー値）
+            const blockSize = this.getEffectiveBlockSize();
 
             // モザイク処理を実行（現在の状態をベースに段階的処理）
             const success = await this.imageProcessor.applyMosaic(blockSize, selectionMask, true);
@@ -365,7 +385,7 @@ class MosaicApp {
             }
 
             // ダウンロードを実行
-            this.downloadBlob(blob, CONFIG.file.downloadFileName);
+            this.downloadBlob(blob, this.buildDownloadFileName());
 
             this.showStatus(CONFIG.messages.processingComplete);
             debugLog('Image downloaded');
@@ -449,7 +469,8 @@ class MosaicApp {
         // 厳密チェック: hasSelection と isConfirmed の両方が true の場合のみ
         if (hasSelection && isConfirmed && (
             (mode === 'rectangle' && this.selectionManager.rectangleSelection !== null) ||
-            (mode === 'freehand' && this.selectionManager.selectionPath.length > 0)
+            (mode === 'freehand' && this.selectionManager.selectionPath.length > 0) ||
+            (mode === 'brush' && this.selectionManager.brushStrokes.length > 0)
         )) {
             this.elements.processBtn.disabled = false;
         } else {
@@ -493,6 +514,9 @@ class MosaicApp {
         this.selectionManager.setSelectionMode(mode);
         this.updateSelectionButtons();
         this.updateProcessButton();
+
+        // ブラシモードのときのみブラシサイズ調整UIを表示
+        this.elements.brushSizeControl.style.display = mode === 'brush' ? 'flex' : 'none';
     }
 
 
@@ -661,6 +685,9 @@ class MosaicApp {
             radio.checked = radio.value === currentMode;
         });
 
+        // ブラシサイズUIの表示を現在のモードに合わせる
+        this.elements.brushSizeControl.style.display = currentMode === 'brush' ? 'flex' : 'none';
+
         // モードUI更新後にボタン状態も再確認
         this.updateProcessButton();
 
@@ -668,13 +695,70 @@ class MosaicApp {
     }
 
     /**
-     * モザイクサイズを更新
+     * 実際に適用するモザイクブロックサイズを取得
+     * 「長辺の1/N」オプションが有効なら画像長辺から自動算出、そうでなければスライダー値
+     * @returns {number}
+     */
+    getEffectiveBlockSize() {
+        if (this.elements.autoMosaicSize.checked && this.imageProcessor.hasImage()) {
+            const info = this.imageProcessor.getImageInfo();
+            const longEdge = Math.max(info.width, info.height);
+            const divisor = CONFIG.mosaic.autoSizeDivisor || 100;
+            return Math.max(1, Math.round(longEdge / divisor));
+        }
+        return parseInt(this.elements.mosaicSizeSlider.value);
+    }
+
+    /**
+     * モザイクサイズの表示と入力状態を更新
+     */
+    updateMosaicSizeDisplay() {
+        const auto = this.elements.autoMosaicSize.checked;
+
+        // 自動設定時は粗さスライダーを無効化
+        this.elements.mosaicSizeSlider.disabled = auto;
+
+        const size = this.getEffectiveBlockSize();
+        this.elements.mosaicSizeValue.textContent = auto ? `${size}px (自動)` : `${size}px`;
+
+        debugLog('Mosaic size display updated', { size, auto });
+    }
+
+    /**
+     * ブラシサイズを更新
      * @param {string} value - スライダーの値
      */
-    updateMosaicSize(value) {
+    updateBrushSize(value) {
         const size = parseInt(value);
-        this.elements.mosaicSizeValue.textContent = `${size}px`;
-        debugLog('Mosaic size updated', { size });
+        this.elements.brushSizeValue.textContent = `${size}px`;
+        this.selectionManager.setBrushSize(size);
+        debugLog('Brush size updated', { size });
+    }
+
+    /**
+     * ダウンロードファイル名のプレビューを更新
+     */
+    updateSuffixPreview() {
+        this.elements.suffixPreview.textContent = this.getSanitizedSuffix();
+    }
+
+    /**
+     * ファイル名に使える形にサフィックスを整形
+     * @returns {string}
+     */
+    getSanitizedSuffix() {
+        const raw = (this.elements.downloadSuffix.value || '').trim();
+        // ファイル名に使えない文字を除去
+        return raw.replace(/[\\/:*?"<>|]/g, '_');
+    }
+
+    /**
+     * ダウンロードファイル名を組み立てる
+     * @returns {string}
+     */
+    buildDownloadFileName() {
+        const base = CONFIG.file.downloadBaseName || 'mosaic-image';
+        return `${base}${this.getSanitizedSuffix()}.png`;
     }
 
     /**

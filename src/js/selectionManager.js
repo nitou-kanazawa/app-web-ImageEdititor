@@ -9,9 +9,11 @@ class SelectionManager {
 
         // 選択状態
         this.isSelecting = false;
-        this.selectionMode = 'rectangle'; // 'rectangle', 'freehand', 'full'
+        this.selectionMode = 'rectangle'; // 'rectangle', 'freehand', 'brush', 'full'
         this.selectionPath = [];
         this.rectangleSelection = null;
+        this.brushStrokes = []; // ブラシの各ストローク（点の配列の配列）
+        this.brushRadius = CONFIG.brush?.defaultRadius || 15; // ブラシ半径
         this.isConfirmed = false;
 
         // マウス状態
@@ -81,6 +83,9 @@ class SelectionManager {
 
         if (this.selectionMode === 'freehand') {
             this.selectionPath = [point];
+        } else if (this.selectionMode === 'brush') {
+            // ブラシは複数ストロークを蓄積する（新しいストロークを開始）
+            this.brushStrokes.push([point]);
         }
 
         this.canvas.style.cursor = 'crosshair';
@@ -101,6 +106,12 @@ class SelectionManager {
         } else if (this.selectionMode === 'freehand') {
             this.selectionPath.push(this.currentPoint);
             this.drawFreehandPreview();
+        } else if (this.selectionMode === 'brush') {
+            const currentStroke = this.brushStrokes[this.brushStrokes.length - 1];
+            if (currentStroke) {
+                currentStroke.push(this.currentPoint);
+            }
+            this.drawBrushPreview();
         }
     }
 
@@ -119,6 +130,8 @@ class SelectionManager {
             this.finalizeRectangleSelection();
         } else if (this.selectionMode === 'freehand') {
             this.finalizeFreehandSelection();
+        } else if (this.selectionMode === 'brush') {
+            this.finalizeBrushSelection();
         }
     }
 
@@ -291,6 +304,80 @@ class SelectionManager {
     }
 
     /**
+     * ブラシ半径を設定
+     * @param {number} radius - 半径（px）
+     */
+    setBrushSize(radius) {
+        this.brushRadius = radius;
+        debugLog('Brush size changed', { radius });
+    }
+
+    /**
+     * ブラシストロークを指定コンテキストに描画
+     * @private
+     * @param {CanvasRenderingContext2D} ctx - 描画先コンテキスト
+     * @param {number} radius - ブラシ半径
+     */
+    _renderBrushStrokes(ctx, radius) {
+        ctx.lineWidth = radius * 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        this.brushStrokes.forEach(stroke => {
+            if (!stroke || stroke.length === 0) return;
+
+            if (stroke.length === 1) {
+                // 単発クリックは円（ドット）として描画
+                const p = stroke[0];
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // 連続点は丸キャップの太い線で描画
+                ctx.beginPath();
+                ctx.moveTo(stroke[0].x, stroke[0].y);
+                for (let i = 1; i < stroke.length; i++) {
+                    ctx.lineTo(stroke[i].x, stroke[i].y);
+                }
+                ctx.stroke();
+            }
+        });
+    }
+
+    /**
+     * ブラシ選択のプレビューを描画
+     */
+    drawBrushPreview() {
+        this.clearOverlay();
+        this.overlayCtx.strokeStyle = 'rgba(66, 153, 225, 0.4)';
+        this.overlayCtx.fillStyle = 'rgba(66, 153, 225, 0.4)';
+        this._renderBrushStrokes(this.overlayCtx, this.brushRadius);
+    }
+
+    /**
+     * ブラシ選択を確定
+     */
+    finalizeBrushSelection() {
+        const lastStroke = this.brushStrokes[this.brushStrokes.length - 1];
+
+        // 点が無い場合は無効
+        if (!lastStroke || lastStroke.length === 0) {
+            return;
+        }
+
+        this.isConfirmed = true;
+        this.drawFinalSelection();
+
+        debugLog('Brush selection finalized', {
+            strokeCount: this.brushStrokes.length,
+            isConfirmed: this.isConfirmed,
+            hasSelection: this.hasSelection()
+        });
+
+        this.notifySelectionComplete();
+    }
+
+    /**
      * 確定した選択範囲を描画
      */
     drawFinalSelection() {
@@ -321,6 +408,11 @@ class SelectionManager {
             this.overlayCtx.closePath();
             this.overlayCtx.fill();
             this.overlayCtx.stroke();
+
+        } else if (this.selectionMode === 'brush' && this.brushStrokes.length > 0) {
+            this.overlayCtx.strokeStyle = 'rgba(49, 130, 206, 0.45)';
+            this.overlayCtx.fillStyle = 'rgba(49, 130, 206, 0.45)';
+            this._renderBrushStrokes(this.overlayCtx, this.brushRadius);
         }
     }
 
@@ -344,6 +436,7 @@ class SelectionManager {
         this.isSelecting = false;
         this.selectionPath = [];
         this.rectangleSelection = null;
+        this.brushStrokes = [];
         this.startPoint = null;
         this.currentPoint = null;
 
@@ -404,6 +497,7 @@ class SelectionManager {
         if (this.selectionMode === 'full') return this.isConfirmed;
         if (this.selectionMode === 'rectangle') return this.rectangleSelection !== null && this.isConfirmed;
         if (this.selectionMode === 'freehand') return this.selectionPath.length > 0 && this.isConfirmed;
+        if (this.selectionMode === 'brush') return this.brushStrokes.length > 0 && this.isConfirmed;
         return false;
     }
 
@@ -447,6 +541,9 @@ class SelectionManager {
             }
             maskCtx.closePath();
             maskCtx.fill();
+        } else if (this.selectionMode === 'brush' && this.brushStrokes.length > 0) {
+            maskCtx.strokeStyle = 'white';
+            this._renderBrushStrokes(maskCtx, this.brushRadius);
         }
 
         return maskCtx.getImageData(0, 0, width, height);
@@ -477,6 +574,7 @@ class SelectionManager {
         this.isSelecting = false;
         this.selectionPath = [];
         this.rectangleSelection = null;
+        this.brushStrokes = [];
         this.startPoint = null;
         this.currentPoint = null;
 

@@ -14,7 +14,15 @@ const CONFIG = {
     mosaic: {
         defaultBlockSize: 10,
         minBlockSize: 5,
-        maxBlockSize: 50
+        maxBlockSize: 50,
+        autoSizeDivisor: 100 // 「長辺の1/N」自動設定の除数
+    },
+
+    // ブラシ設定
+    brush: {
+        defaultRadius: 15,
+        minRadius: 5,
+        maxRadius: 50
     },
 
     // ファイル設定
@@ -22,6 +30,7 @@ const CONFIG = {
         maxSize: 10 * 1024 * 1024, // 10MB
         allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
         downloadFormat: 'image/png',
+        downloadBaseName: 'mosaic-image', // ダウンロードファイル名のベース部分
         downloadFileName: 'mosaic-image.png'
     },
 

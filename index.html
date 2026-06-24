@@ -4,82 +4,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像モザイク処理アプリ</title>
+    <title>Mosaic Editor</title>
     <link rel="stylesheet" href="src/css/styles.css">
 </head>
 
 <body>
-    <div class="app">
-        <header class="app__header">
-            <h1 class="app__title">画像モザイク処理アプリ</h1>
+    <div class="vscode">
+        <!-- タイトルバー -->
+        <header class="titlebar">
+            <div class="titlebar__traffic">
+                <span class="titlebar__dot titlebar__dot--red"></span>
+                <span class="titlebar__dot titlebar__dot--yellow"></span>
+                <span class="titlebar__dot titlebar__dot--green"></span>
+            </div>
+            <div class="titlebar__title">画像モザイク処理アプリ — Mosaic Editor</div>
+            <div class="titlebar__spacer"></div>
         </header>
 
-        <main class="app__main">
-            <section class="upload-section">
-                <input type="file" id="imageInput" class="upload-section__input" accept="image/*">
-                <div class="status" id="status">画像を選択してください</div>
-                <div class="error" id="error" style="display: none;"></div>
-            </section>
+        <!-- 本体: アクティビティバー + サイドバー + エディタ -->
+        <div class="workbench">
+            <!-- アクティビティバー -->
+            <nav class="activitybar" aria-label="Activity Bar">
+                <button class="activitybar__item activitybar__item--active" title="エクスプローラー" type="button">
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                        <path fill="currentColor"
+                            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm0 2.5L17.5 8H14V4.5z" />
+                    </svg>
+                </button>
+                <button class="activitybar__item" title="モザイクツール" type="button">
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                        <path fill="currentColor"
+                            d="M3 3h6v6H3V3zm12 0h6v6h-6V3zM3 15h6v6H3v-6zm12 0h6v6h-6v-6z" />
+                    </svg>
+                </button>
+                <button class="activitybar__item" title="検索" type="button">
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                        <path fill="currentColor"
+                            d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z" />
+                    </svg>
+                </button>
+                <div class="activitybar__spacer"></div>
+                <button class="activitybar__item" title="設定" type="button">
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                        <path fill="currentColor"
+                            d="M12 8a4 4 0 1 0 4 4 4 4 0 0 0-4-4zm9 4a7 7 0 0 0-.14-1.4l2.1-1.64-2-3.46-2.49 1a7 7 0 0 0-2.42-1.4L15.5 2h-4l-.55 2.6a7 7 0 0 0-2.42 1.4l-2.49-1-2 3.46 2.1 1.64a7 7 0 0 0 0 2.8L1.5 14.5l2 3.46 2.49-1a7 7 0 0 0 2.42 1.4L9 21h4l.55-2.6a7 7 0 0 0 2.42-1.4l2.49 1 2-3.46-2.1-1.64A7 7 0 0 0 21 12z" />
+                    </svg>
+                </button>
+            </nav>
 
-            <section class="tool-selection" id="toolSelection" style="display: none;">
-                <div class="tool-section">
-                    <h3>選択モード</h3>
-                    <div class="tool-selection__options">
-                        <label class="radio-option">
-                            <input type="radio" name="selectionMode" value="rectangle" checked>
-                            <span>バウンディングボックス</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="selectionMode" value="freehand">
-                            <span>フリー選択</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="selectionMode" value="full">
-                            <span>全体</span>
-                        </label>
+            <!-- サイドバー -->
+            <aside class="sidebar">
+                <div class="sidebar__header">エクスプローラー</div>
+                <div class="sidebar__content">
+                    <!-- ファイルセクション -->
+                    <section class="panel">
+                        <div class="panel__title">
+                            <span class="panel__chevron">▾</span> ファイル
+                        </div>
+                        <div class="panel__body">
+                            <input type="file" id="imageInput" class="upload-section__input" accept="image/*">
+                        </div>
+                    </section>
+
+                    <!-- ツール選択 (画像読み込み後に表示) -->
+                    <section class="tool-selection" id="toolSelection" style="display: none;">
+                        <div class="panel">
+                            <div class="panel__title">
+                                <span class="panel__chevron">▾</span> 選択モード
+                            </div>
+                            <div class="panel__body tool-selection__options">
+                                <label class="radio-option">
+                                    <input type="radio" name="selectionMode" value="rectangle" checked>
+                                    <span>バウンディングボックス</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="selectionMode" value="freehand">
+                                    <span>フリー選択</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="selectionMode" value="brush">
+                                    <span>丸ブラシ</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="selectionMode" value="full">
+                                    <span>全体</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel__title">
+                                <span class="panel__chevron">▾</span> モザイク設定
+                            </div>
+                            <div class="panel__body mosaic-controls">
+                                <label class="slider-control">
+                                    <span class="slider-control__label">粗さ</span>
+                                    <input type="range" id="mosaicSizeSlider" class="slider-control__slider" min="5"
+                                        max="50" value="10" step="1">
+                                    <span class="slider-control__value" id="mosaicSizeValue">10px</span>
+                                </label>
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="autoMosaicSize">
+                                    <span>長辺の1/100を自動設定</span>
+                                </label>
+                                <label class="slider-control" id="brushSizeControl" style="display: none;">
+                                    <span class="slider-control__label">ブラシ</span>
+                                    <input type="range" id="brushSizeSlider" class="slider-control__slider" min="5"
+                                        max="50" value="15" step="1">
+                                    <span class="slider-control__value" id="brushSizeValue">15px</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel__title">
+                                <span class="panel__chevron">▾</span> 出力設定
+                            </div>
+                            <div class="panel__body">
+                                <label class="text-input-control">
+                                    <span class="text-input-control__label">ファイル名サフィックス</span>
+                                    <input type="text" id="downloadSuffix" class="text-input-control__input"
+                                        placeholder="例: _edited" maxlength="40">
+                                </label>
+                                <p class="text-input-control__hint">保存名: mosaic-image<span
+                                        id="suffixPreview"></span>.png</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </aside>
+
+            <!-- エディタ領域 -->
+            <main class="editor">
+                <div class="editor__tabs">
+                    <div class="tab tab--active">
+                        <span class="tab__icon">🖼</span>
+                        <span class="tab__label">mosaic-image.png</span>
                     </div>
                 </div>
 
-                <div class="tool-section">
-                    <h3>モザイク設定</h3>
-                    <div class="mosaic-controls">
-                        <label class="slider-control">
-                            <span class="slider-control__label">粗さ:</span>
-                            <input type="range" id="mosaicSizeSlider" class="slider-control__slider" min="5" max="50"
-                                value="10" step="1">
-                            <span class="slider-control__value" id="mosaicSizeValue">10px</span>
-                        </label>
+                <div class="editor__canvas-wrap">
+                    <section class="canvas-section">
+                        <canvas id="canvas" class="canvas-section__canvas"></canvas>
+                        <canvas id="overlayCanvas" class="canvas-section__overlay"></canvas>
+                        <div class="editor__placeholder">
+                            <div class="editor__placeholder-icon">🖼</div>
+                            <p class="editor__placeholder-text">画像を開いてください</p>
+                            <p class="editor__placeholder-sub">左のサイドバーからファイルを選択、またはドラッグ&amp;ドロップ</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ツールバー (操作ボタン) -->
+                <div class="controls">
+                    <div class="controls__group">
+                        <button class="btn btn--neutral btn--icon" id="undoBtn" title="元に戻す (Ctrl+Z)" disabled>
+                            ↶ Undo
+                        </button>
+                        <button class="btn btn--neutral btn--icon" id="redoBtn" title="やり直し (Ctrl+Y)" disabled>
+                            ↷ Redo
+                        </button>
+                    </div>
+                    <div class="controls__group">
+                        <button class="btn btn--primary" id="processBtn" disabled>
+                            モザイク処理実行
+                        </button>
+                        <button class="btn btn--neutral" id="resetBtn" style="display: none;">
+                            元画像に戻す
+                        </button>
+                        <button class="btn btn--secondary" id="downloadBtn" style="display: none;">
+                            ダウンロード
+                        </button>
                     </div>
                 </div>
-            </section>
+            </main>
+        </div>
 
-            <section class="canvas-section">
-                <canvas id="canvas" class="canvas-section__canvas"></canvas>
-                <canvas id="overlayCanvas" class="canvas-section__overlay"></canvas>
-            </section>
+        <!-- ステータスバー -->
+        <footer class="statusbar">
+            <span class="statusbar__item statusbar__item--accent">
+                <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                    <path fill="currentColor" d="M8 1l2 5h5l-4 3 1.5 5L8 11 3.5 14 5 9 1 6h5z" />
+                </svg>
+                Mosaic Editor
+            </span>
+            <span class="statusbar__item" id="status">画像を選択してください</span>
+            <span class="statusbar__spacer"></span>
+            <span class="statusbar__item">UTF-8</span>
+            <span class="statusbar__item">Canvas</span>
+        </footer>
 
-            <section class="controls">
-                <div class="controls__group">
-                    <button class="btn btn--neutral btn--icon" id="undoBtn" title="元に戻す (Ctrl+Z)" disabled>
-                        ↶ Undo
-                    </button>
-                    <button class="btn btn--neutral btn--icon" id="redoBtn" title="やり直し (Ctrl+Y)" disabled>
-                        ↷ Redo
-                    </button>
-                </div>
-                <div class="controls__group">
-                    <button class="btn btn--primary" id="processBtn" disabled>
-                        モザイク処理実行
-                    </button>
-                    <button class="btn btn--neutral" id="resetBtn" style="display: none;">
-                        元画像に戻す
-                    </button>
-                    <button class="btn btn--secondary" id="downloadBtn" style="display: none;">
-                        ダウンロード
-                    </button>
-                </div>
-            </section>
-        </main>
+        <!-- エラー通知 (トースト) -->
+        <div class="error" id="error" style="display: none;"></div>
     </div>
 
     <script src="src/js/config.js"></script>
